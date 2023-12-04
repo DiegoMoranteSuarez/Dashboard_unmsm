@@ -1,0 +1,250 @@
+---
+title: "Ubicate Cachimbo"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: journal
+    orientation: columns
+    social: menu
+    source_code: embed
+    vertical_layout: scroll
+    width: 400
+   
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(leaflet)
+library(foreign)
+library(fontawesome)
+```
+# SERVICIOS
+
+## SERVICIOS  {data-width=500}
+
+### VISOR DE SERVICIOS
+```{r}
+  
+  
+  # Ruta al archivo DBF
+  ruta_dbf <- "C:/Users/diego/Documents/DashBoardUNMSM/tabla/servicio_table3.dbf"
+  
+  # Leer el archivo DBF y convertirlo a un dataframe
+  dataframe_servicios <- read.dbf(ruta_dbf)
+  
+  # first 20 quakes
+  df.20 <- dataframe_servicios[1:57,]
+  
+  getColor <- function(dataframe_servicios) {
+    sapply(dataframe_servicios$TIPO_DE_SE, function(TIPO_DE_SE) {
+      # Personaliza los colores según los nombres de servicios
+      if (TIPO_DE_SE == "LIBRERÍA/IMPRENTA") {
+        "green"
+      } else if (TIPO_DE_SE == "KIOSKO/BODEGA") {
+        "yellowgreen"
+      } else if (TIPO_DE_SE == "CAFETERIA") {
+        "orange"
+      } else if (TIPO_DE_SE == "BIBLIOTECA") {
+        "blue"
+      } else {
+        "red"
+      }
+    })
+  }
+  
+  icons <- awesomeIcons(
+    icon = 'ios-close',
+    iconColor = 'black',
+    library = 'ion',
+    markerColor = getColor(df.20)
+  )
+  
+  
+  # Leer el archivo GeoJSON
+  facultades <- geojsonio::geojson_read("C:/Users/diego/Documents/DashBoardUNMSM/Json/Facultad_UNMSM.geojson", what = "sp")
+  servicios <- geojsonio::geojson_read("C:/Users/diego/Documents/DashBoardUNMSM/Json/SERV_UNMSM.geojson", what = "sp")
+  
+  # Crear el mapa
+  m <- leaflet() %>%
+    setView(lng = -77.082, lat = -12.056, zoom = 16)  %>%
+    addProviderTiles("MapBox", options = providerTileOptions(
+      ID = "mapbox.light",
+      accessToken = Sys.getenv('MAPBOX_ACCESS_TOKEN')
+    ))
+  
+  
+  
+  
+  
+  # Crear etiquetas
+  labels <- sprintf(
+    "<strong>%s</strong>",
+    facultades$NOMFAC
+  ) %>% lapply(htmltools::HTML)
+  
+  # Añadir polígonos al mapa
+  m <- m %>% 
+    addPolygons(data=facultades,
+      weight = 2,
+      opacity = 1,
+      color = "gray",
+      dashArray = "0.5",
+      fillOpacity = 0.7,
+      highlightOptions = highlightOptions(
+        weight = 2,
+        color = "#000",
+        dashArray = "",
+        fillOpacity = 0.9,
+        bringToFront = TRUE),
+      label = labels,
+      labelOptions = labelOptions(
+        style = list("font-weight" = "normal", padding = "3px 8px"),
+        textsize = "15px",
+        direction = "auto"),
+      group = "Facultades"  # Agregar grupo para el control de capas
+    ) %>%
+    addProviderTiles(providers$CartoDB.Positron, group = "CartoDB") %>%
+    addMiniMap()
+  
+  
+  labels_serv <- sprintf(
+    "<strong>%s</strong><br/>Horario: %s - %s",
+    df.20$TIPO_DE_SE, df.20$HOR_INI, df.20$HOR_FIN
+  ) %>% lapply(htmltools::HTML)
+  
+  m <- m %>%
+    addAwesomeMarkers(data = df.20, ~ESTE, ~NORTE, icon=icons, label=labels_serv) %>%
+    setView(lng = -77.082, lat = -12.056, zoom = 16)  %>%
+    addProviderTiles(providers$CartoDB.Positron, group = "CartoDB") %>%
+    addMiniMap()
+  
+  
+  # Definir colores y etiquetas para la leyenda
+  legend_colors <- c("gray", "orange")  # Añadir más colores si es necesario
+  legend_labels <- c("Facultades", "CartoDB")  # Actualizar etiquetas según sea necesario
+  
+  # Añadir control de capas y leyenda
+  m <- m %>%
+    addLayersControl(
+      overlayGroups = c("Facultades", "WorldStreetMap"),  # Grupos de capas
+      options = layersControlOptions(collapsed = TRUE)
+    ) %>%
+    addLegend(
+      position = "bottomright",
+      colors = legend_colors,
+      labels = legend_labels,
+      title = "Leyenda"
+    )
+  
+  # Mostrar el mapa
+  m
+
+
+```
+### INFORMACIÓN DE LOS SERVICIOS
+```{r}
+
+```
+## UNMSM  {data-width=200}
+### CIUDAD UNIVERSITARIA
+La reconocida Ciudad Universitaria fue creada en la década de los años sesenta convirtiéndose en uno de los campus universitarios más reconocidos del país donde convergen la identidad y la historia. Sus edificaciones dan cuenta de la diversidad académica que ofrece la Decana de América y donde conviven estudiantes, docenes y personal administrativo de las facultades correspondientes a las cinco áreas del conocimiento académicas que la constituyen. En este espacio se han formado muchas de las figuras más notables del arte, ciencia y política del Perú, y de sus aulas han egresado destacados estudiosos que resaltan a nivel nacional e internacional.
+```{r}
+
+```
+# BUS PERIMETRAL
+
+### DESCRIPCIÓN
+
+```{r}
+ # Cargar datos del GeoJSON (polígonos)
+  paraderos <- geojsonio::geojson_read("C:/Users/diego/Documents/MapaUNMSM/facultades/geojson/paraderos.geojson", what = "sp")
+  
+  # Cargar datos del GeoJSON (líneas)
+  ruta_burro <- geojsonio::geojson_read("C:/Users/diego/Documents/MapaUNMSM/facultades/geojson/ruta_burro.geojson", what = "sp")
+  
+    
+  facultades <- geojsonio::geojson_read("C:/Users/diego/Documents/DashBoardUNMSM/Json/Facultad_UNMSM.geojson", what = "sp")
+    
+    # Crear el mapa
+    q <- leaflet(facultades) %>%  # Añadir capa de teselas base
+    setView(lng = -77.082, lat = -12.056, zoom = 16) %>% addProviderTiles(providers$CartoDB.Positron, group = "CartoDB") %>%
+      addMiniMap()  # Establecer vista inicial
+  
+  # Añadir polígonos con etiquetas emergentes
+  q <- q %>% addPolygons(
+    data = paraderos,
+    fillColor = "red",  # Color de relleno
+    color = "red",     # Color del borde
+    fillOpacity = 0.5,    # Opacidad del relleno
+    weight = 6,            # Grosor del borde
+    group = "Paraderos",  # Grupo para el control de capas
+    popup = ~paste("Paradero: ", paraderos$Nombre)  # Información emergente al hacer clic
+  )
+  labels_ruta <- sprintf(
+    "<strong>Distancia:</strong> %s m",
+    ruta_burro$Longitud
+  ) %>% lapply(htmltools::HTML)
+  
+  # Añadir líneas con etiquetas emergentes
+  q <- q %>% addPolylines(
+    data = ruta_burro,
+    color = "darksalmon",     # Color del borde
+    fillOpacity = 0.2,# Color de las líneas
+    weight = 8,            # Grosor de las líneas
+    group = "Ruta Bus",  # Grupo para el control de capas
+    popup = ~paste( ruta_burro$Longitud, "metros"),
+    label = labels_ruta,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto")
+  )
+  
+  labels <- sprintf(
+    "<strong>%s</strong>",
+    facultades$NOMFAC
+  ) %>% lapply(htmltools::HTML)
+  
+  q <- q %>% addPolygons(weight = 2,
+                    opacity = 1,
+                    color = "gray",
+                    group = "Facultades",
+                    dashArray = "0.5",
+                    fillOpacity = 0.7,
+                    label = labels,
+                    labelOptions = labelOptions(
+                      style = list("font-weight" = "normal", padding = "3px 8px"),
+                      textsize = "15px",
+                      direction = "auto"))
+  
+  
+  
+  
+  
+  q <- q %>% addEasyButton(easyButton(
+    icon="ion-location",
+    title="Encuentra mi ubicación",
+    onClick = JS("function(btn, map){ map.locate({setView: true, maxZoom: 16}); }")
+  ))
+  # Mostrar el mapa
+  # Definir colores y etiquetas para la leyenda
+  legend_colors_burro <- c("black", "gray", "darksalmon","red" )  # Añadir más colores si es necesario
+  legend_labels_burro <- c("Facultades", "Mapa Base","Bus Perimetral","Paraderos" )  # Actualizar etiquetas según sea necesario
+  
+  # Añadir control de capas y leyenda
+  q <- q %>%
+    addLegend(
+      position = "bottomright",
+      colors = legend_colors_burro,
+      labels = legend_labels_burro,
+      title = "Leyenda"
+    )%>%
+    addLayersControl(
+      overlayGroups = c("Paraderos","Ruta Bus", "Facultades","CartoDB"),  # Grupos de capas
+      options = layersControlOptions(collapsed = TRUE)
+    )
+  
+  
+  q
+```
+
+### Burro

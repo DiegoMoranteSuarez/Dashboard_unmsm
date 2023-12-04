@@ -1,0 +1,12 @@
+name: dash_unmsm
+title: dash_unmsm
+username: 9no4sw-diego-morante0suarez
+account: 9no4sw-diego-morante0suarez
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 10703980
+bundleId: 8001469
+url: https://9no4sw-diego-morante0suarez.shinyapps.io/dash_unmsm/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
